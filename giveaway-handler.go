@@ -103,4 +103,4 @@
 {{end}}
 
 {{/* Calling the participation button command (starting the new giveaway) */}}
-{{execCC $buttonCommandID nil 0 .ExecData}}
+{{execCC $buttonCommandID nil 3 .ExecData}}
