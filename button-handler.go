@@ -3,8 +3,14 @@
 
 {{$targetHour := 17}} {{/* Giveaway finish time (UTC) */}}
 
-{{/* Respond to Discord immediately to save the token from expiration */}}
-{{sendResponse nil (complexMessage "content" "Processing your entry... ⚙️" "ephemeral" true)}}
+{{/* Safe interaction response that avoids crash after 3 seconds of timeout */}}
+{{$responded := true}}
+{{try}}
+	{{/* Respond to Discord immediately to save the token from expiration */}}
+	{{sendResponse nil (complexMessage "content" "Processing your entry... ⚙️" "ephemeral" true)}}
+{{catch}}
+	{{$responded = false}}
+{{end}}
 
 {{/* Now we can leisurely perform all necessary database actions */}}
 {{$stats := dbGet .User.ID "user_stats"}}
@@ -30,9 +36,11 @@ the date of their last win listed, then their winning streak has been broken. */
 	{{$list = $participants.Value}}
 {{end}}
 
-{{/* Checking user's participation and updating the entry and the giveaway message */}}
+{{/* Checking user's participation */}}
 {{if in $list .User.ID}}
-	{{editResponse nil nil "You're already entered in today's giveaway! Wait for the results. ⏳"}}
+	{{if $responded}}
+		{{editResponse nil nil "You're already entered in today's giveaway! Wait for the results. ⏳"}}
+	{{end}}
 {{else}}
 	{{/* Updating the list */}}
 	{{$list = $list.Append .User.ID}}
@@ -55,7 +63,7 @@ the date of their last win listed, then their winning streak has been broken. */
 	{{end}}
 	{{$timestamp := (print "<t:" $targetUnix ":t>")}}
 	
-	{{/* Updating the message with the button */}}
+	{{/* Updating the button message */}}
 	{{editMessage nil .Message.ID (complexMessage
 		"embed" (cembed
 			"title" "🎉 Daily Role Giveaway 🎉"
@@ -73,5 +81,7 @@ the date of their last win listed, then their winning streak has been broken. */
 		)
 	)}}
 	
-	{{editResponse nil nil "You've successfully entered today's giveaway! ✅"}}
+	{{if $responded}}
+		{{editResponse nil nil "You've successfully entered today's giveaway! ✅"}}
+	{{end}}
 {{end}}
